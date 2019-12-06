@@ -208,7 +208,7 @@ void save_t_file(string file_path,MATRIX_CHANNEL* t_ijab)
 } 
 
 
-void CCD_neutronmatter(double rho,int output_file_count, LECs Minnesota_LECs) //generate single particle state
+double CCD_neutronmatter(double rho,int output_file_count, LECs Minnesota_LECs) //generate single particle state
 {
 	double L;
 	L = pow((double)magic_no/rho, 1./3.);
@@ -1409,7 +1409,7 @@ void CCD_neutronmatter(double rho,int output_file_count, LECs Minnesota_LECs) //
 		free(H_ijab[i].matrix);
 	}
 
-
+    return((hf_energy+temp2)/magic_no);
 }
 
 int main()
@@ -1437,7 +1437,7 @@ int main()
 // calculate t_ij_ab for different LECs        
         output_file_count = 0;
         start = clock();
-        int subspace_dimension = 1;
+        int subspace_dimension = 15;
 
 // generate subspace wf with different LECs
 //        rho = 0.08 ;
@@ -1456,13 +1456,28 @@ int main()
 // generate subspace wf with different rho
         Minnesota_LECs.Vr = 200;
         Minnesota_LECs.Vs = -91.85;
-       
+        double E_per_A[subspace_dimension]; 
         for (int loop1 = 0; loop1< subspace_dimension; loop1++)
         {
-            rho = 0.2*(1+0.1*loop1);
-            CCD_neutronmatter(rho,output_file_count,Minnesota_LECs);
+            rho = 0.02*(1+1*loop1);
+            E_per_A[loop1] = CCD_neutronmatter(rho,output_file_count,Minnesota_LECs);
             output_file_count++;
         } 
+
+
+        ofstream outfile;
+        string file_path;
+        file_path = "ture_neutronmatter.txt";
+        outfile.open(file_path,ios::out);
+        if (outfile.is_open())
+        {    
+            outfile << subspace_dimension<<endl;
+            outfile <<"rho      E/A"<<endl;
+            for (int loop1= 0; loop1<subspace_dimension; loop1++)
+            {
+                outfile << 0.02*(1+1*loop1)<<"    "<<setprecision(10)<<E_per_A[loop1]<<endl; 
+            }
+        }
 
 
 
@@ -1471,11 +1486,9 @@ int main()
 
 
 //solve the general eigenvalue problem
-        general_eigvalue project1;
-        project1.inoutput(rho, Minnesota_LECs,subspace_dimension);
-//        project1.setup_CCD_configuration_space(rho, Minnesota_LECs);
-        cout<<"\n hhpp_dimension="<<project1.hhpp_dimension;
+        //general_eigvalue project1;
+        //project1.inoutput(rho, Minnesota_LECs,subspace_dimension);
+        //cout<<"\n hhpp_dimension="<<project1.hhpp_dimension;
         //cout<<endl<<"Ek="<<project1.Ek<<endl;  
-
 
 }
