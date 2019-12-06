@@ -61,16 +61,20 @@ class general_eigvalue
     public:
            general_eigvalue();
            ~general_eigvalue();
-           void input(double rho, LECs Minnesota_LECs, int subspace_dimension_in);
+           void inoutput(double rho, LECs Minnesota_LECs, int subspace_dimension_in);
            int hhpp_dimension, hh_dimension, pp_no, hh_no, subspace_dimension;//subspace_dimension is the number of the new basis 
-           double L;
+           double L;         
+           double Ek;
+
     private:
-           void setup_CCD_configuration_space(double rho, LECs Minnesota_LECs);     
+           void setup_CCD_configuration_space(double rho);     
            void allocate_all_matrix(int subspace_dimension);
            void get_N_matrix();
            void get_H_matrix();
            void read_all_matrix();
-           void calculate_H_bar_ij_ab(LECs Minnesopta_LECs);
+           void calculate_H_bar_ij_ab(LECs Minnesota_LECs);
+           void vacuum_expectation_value_H_bar(LECs Minnesota_LECs);
+           void write_to_file();
 
            spstate *config;   
            int spstates_no;       
@@ -78,10 +82,11 @@ class general_eigvalue
            CHANNEL *pp_channel, *hh_channel, *hhpp_channel_L, *hhpp_channel_R;
            double **temp_pointer1;//_V, **temp_pointer1_t, **temp_pointer1_H;
            double *temp_pointer2;//_V, *temp_pointer2_t, *temp_pointer2_H;
-           MATRIX_CHANNEL **t_ijab, **H_bar_ijab, **l_abij, **x_ijab;
+           MATRIX_CHANNEL **t_ijab, **H_bar_ijab, **l_abij, **x_ijab, **kinetic_bar;
            MATRIX_CHANNEL *V_ijkl, *V_cdab, *V_ijab;
            double *Ec;
-           double **N_matrix, **H_matrix;
+           double **N_matrix, **H_matrix, **K_matrix;
+           double *vacuum_H_bar;
 };
 
 
@@ -99,4 +104,6 @@ double V_ks_AS(double L, double q_rs_x, double q_rs_y, double q_rs_z, int sz_r, 
 
 double f_ks(struct spstate *config, int spstates_no, double L, int kp_x, int kp_y, int kp_z, int sp, int kq_x, int kq_y, int kq_z, int sq, LECs Minnesota_LECs);
 
+double f_ks_1(struct spstate *config, int spstates_no, double L, int kp_x, int kp_y, int kp_z, int sp, int kq_x, int kq_y, int kq_z, int sq, LECs Minnesota_LECs);
 
+double f_ks_2(struct spstate *config, int spstates_no, double L, int kp_x, int kp_y, int kp_z, int sp, int kq_x, int kq_y, int kq_z, int sq, LECs Minnesota_LECs);

@@ -40,6 +40,7 @@ general_eigvalue :: general_eigvalue()
            hhpp_dimension = 0; 
            pp_no = 0; 
            hh_no = 0;
+           Ek    = 0;
 }
 
 
@@ -48,14 +49,21 @@ general_eigvalue :: ~general_eigvalue()
 }
 
 
-void general_eigvalue :: input(double rho, LECs Minnesota_LECs, int subspace_dimension_in)
+void general_eigvalue :: inoutput(double rho, LECs Minnesota_LECs, int subspace_dimension_in)
 {
-    L = pow((double)magic_no/rho, 1./3.); 
+    Minnesota_LECs.Vr = 200;
+    Minnesota_LECs.Vs = -91.85;
+    rho = 0.2;
+
+
     subspace_dimension = subspace_dimension_in;
-    setup_CCD_configuration_space(rho, Minnesota_LECs);
+    setup_CCD_configuration_space(rho);
     allocate_all_matrix(subspace_dimension);
     read_all_matrix();
+
+
     calculate_H_bar_ij_ab(Minnesota_LECs);
+    vacuum_expectation_value_H_bar(Minnesota_LECs);
 
     get_N_matrix();
     get_H_matrix();
@@ -69,6 +77,17 @@ void general_eigvalue :: input(double rho, LECs Minnesota_LECs, int subspace_dim
         }
         cout << endl;
     }
+
+    cout <<"\n K_matrix"<<endl;
+    for (int bar = 0; bar < subspace_dimension ; bar++)
+    {
+        for (int ket = 0; ket < subspace_dimension ; ket++)
+        {
+            cout << K_matrix[bar][ket]<< " ";
+        }
+        cout << endl;
+    }
+
     cout <<"\n H_matrix"<<endl;
     for (int bar = 0; bar < subspace_dimension ; bar++)
     {
@@ -79,8 +98,62 @@ void general_eigvalue :: input(double rho, LECs Minnesota_LECs, int subspace_dim
         cout << endl;
     }
 
-
+    write_to_file();
 }
+
+void general_eigvalue :: write_to_file()
+{
+    ofstream outfile;
+    string file_path;
+    file_path = "N_matrix.txt";
+    outfile.open(file_path,ios::out);
+    if (outfile.is_open())
+    {
+        outfile << subspace_dimension<<endl;
+        for (int bar = 0; bar < subspace_dimension ; bar++)
+        {
+            for (int ket = 0; ket < subspace_dimension ; ket++)
+            {
+                outfile << setprecision(10) << N_matrix[bar][ket]<< " ";
+            }
+            outfile << endl;
+        }
+    }
+    outfile.close();
+
+    file_path = "K_matrix.txt";
+    outfile.open(file_path,ios::out);
+    if (outfile.is_open())
+    {
+        outfile << subspace_dimension<<endl;
+        for (int bar = 0; bar < subspace_dimension ; bar++)
+        {
+            for (int ket = 0; ket < subspace_dimension ; ket++)
+            {
+                outfile << setprecision(10) << K_matrix[bar][ket]<< " ";
+            }
+            outfile << endl;
+        }
+    }
+    outfile.close();
+
+    file_path = "H_matrix_LEC_1.txt";
+    outfile.open(file_path,ios::out);
+    if (outfile.is_open())
+    {
+        outfile << subspace_dimension<<endl;
+        for (int bar = 0; bar < subspace_dimension ; bar++)
+        {
+            for (int ket = 0; ket < subspace_dimension ; ket++)
+            {
+                outfile << setprecision(10) << H_matrix[bar][ket]<< " ";
+            }
+            outfile << endl;
+        }
+    }
+    outfile.close();
+}
+
 
 // the overlap matrix elements <psi'|psi> (basis construct with eigenvectors gained by different LECs)
 void general_eigvalue :: get_N_matrix()
@@ -116,21 +189,24 @@ void general_eigvalue :: get_N_matrix()
 // the H matrix in new basis <psi'|H|psi>(basis construct with eigenvectors gained by different LECs)
 void general_eigvalue :: get_H_matrix()
 {
-    double H0, H3;
+    double H0, H3, K0, K3;
     H_matrix = (double **)malloc(subspace_dimension*sizeof(double*));
+    K_matrix = (double **)malloc(subspace_dimension*sizeof(double*));
     for (int i = 0; i< subspace_dimension ; i++)
     {
         H_matrix[i] = (double *)malloc(subspace_dimension*sizeof(double*));
+        K_matrix[i] = (double *)malloc(subspace_dimension*sizeof(double*));
     }
 
     for (int bar = 0; bar < subspace_dimension ; bar++)
     {
         for (int ket = 0; ket < subspace_dimension ; ket++)
         {
-            H0 = 0;
-
-
+            //H0 = 0;
+            H0 = vacuum_H_bar[ket] * N_matrix[bar][ket];
+            K0 = Ek * N_matrix[bar][ket]; 
             H3 = 0;
+            K3 = 0;
             for (int k = 0; k < hhpp_dimension; k ++)
             {
                 for (int ij = 0; ij < hhpp_channel_L[k].times; ij++)
@@ -138,20 +214,75 @@ void general_eigvalue :: get_H_matrix()
                     for (int ab = 0; ab < hhpp_channel_R[k].times; ab++)
                     {
                         H3 += 0.25 * l_abij[bar][k].matrix[ij][ab] * H_bar_ijab[ket][k].matrix[ij][ab]; 
+                        K3 += 0.25 * l_abij[bar][k].matrix[ij][ab] * kinetic_bar[ket][k].matrix[ij][ab]; 
                     }
                 }
             }
+            //cout <<" H0="<<H0<<"  H3="<<H3<<endl;
+            //cout <<" K0="<<K0<<"  K3="<<K3<<endl;
             H_matrix[bar][ket] = H0 + H3 ;
+            K_matrix[bar][ket] = K0 + K3 ;
         }
     }
 
 }
 
-void general_eigvalue :: setup_CCD_configuration_space(double rho, LECs Minnesota_LECs)
+void general_eigvalue :: vacuum_expectation_value_H_bar(LECs Minnesota_LECs)
 {
-        double L;
-        L = pow((double)magic_no/rho, 1./3.);
+    double H0, H3;
+    H0 = 0;
 
+    vacuum_H_bar = (double *)malloc(subspace_dimension*sizeof(double));
+ 
+    /////////////////////////////////////////////////////////////////////////
+    //*********************************************************************//
+    //***************************** BENCHMARK *****************************//
+    //************** For Kinetic energy and HATREE-FOCK energy ************//
+    //********************************************************************///
+    /////////////////////////////////////////////////////////////////////////
+    double kk = 0.;
+    //      cout<<"L = "<<L<<endl;
+    for(int i = 0; i<spstates_no; i++) 
+    {
+            if(config[i].occupied == 1)
+            {
+                    kk = (double)(pow(config[i].kx,2) + pow(config[i].ky,2) + pow(config[i].kz,2)) * pow((2*pi)/L,2);
+                    Ek += pow(h_bar,2) * kk / (2. * mass);
+            }
+    }
+    double hf_energy=0;
+    //hf_energy = Ek;
+    for(int ij = 0; ij < hh_no; ij++)
+    {
+            hf_energy += 0.5 * V_ks_AS(L, hh_config[ij].q_kx, hh_config[ij].q_ky, hh_config[ij].q_kz, hh_config[ij].sz1, hh_config[ij].sz2, \
+            hh_config[ij].q_kx, hh_config[ij].q_ky, hh_config[ij].q_kz, hh_config[ij].sz1, hh_config[ij].sz2, Minnesota_LECs);
+    }
+    cout <<"\nEhf = "<<setprecision(7)<<(hf_energy+Ek);    
+
+    for(int ket = 0; ket < subspace_dimension; ket ++)
+    {
+        H0 = hf_energy;
+        H3 = 0;
+        for(int i = 0; i < hhpp_dimension; i++)
+        {
+            for (int ij = 0; ij < hhpp_channel_L[i].times; ij++)
+            {
+                for (int ab = 0; ab < hhpp_channel_R[i].times; ab++)
+                {
+                   H3 += 0.25 * V_ijab[i].matrix[ij][ab]*t_ijab[ket][i].matrix[ij][ab];
+                }
+            }
+        }
+        vacuum_H_bar[ket] = H0 + H3;
+        //vacuum_H_bar[ket] = H3;
+    }
+}
+
+
+void general_eigvalue :: setup_CCD_configuration_space(double rho)
+{
+        L = pow((double)magic_no/rho, 1./3.);
+        cout <<"L="<<L<<endl;
         spstates_no = 2 * pow((2*Nmax+1),3);
         config = (spstate *)malloc(spstates_no * sizeof(spstate));
 
@@ -239,7 +370,6 @@ void general_eigvalue :: setup_CCD_configuration_space(double rho, LECs Minnesot
         int loop2 = 0;
         int loop3 = 0;
         int loop4 = 0;
-
         ////////  pp-configuration-number /////
         //double pp_no = 0;
         for(int k1 = 0; k1<spstates_no; k1++)
@@ -393,6 +523,35 @@ void general_eigvalue :: setup_CCD_configuration_space(double rho, LECs Minnesot
                         temp_star_hh = (tbwf *)malloc(hh_channel[hh_temp_dimension].times * sizeof(tbwf));
                         hh_channel[hh_temp_dimension].wf = temp_star_hh;
                         hh_temp_dimension++;
+                }
+        }
+
+        for(int i = 0; i<hh_no; i++) //将hh_config[i]的flag全都赋值回1
+        {
+                hh_config[i].flag = 1;
+        }
+
+        loop5 = 0; 
+        k = 0; 
+        for(int i = 0; i< hh_no; i++) 
+        {
+                if(hh_config[i].flag == 1)
+                {
+                        k = 0; 
+                        for(int j = i; j<hh_no; j++) 
+                        {
+                                if(hh_config[i].Q_kx == hh_config[j].Q_kx && hh_config[i].Q_ky == hh_config[j].Q_ky && hh_config[i].Q_kz == hh_config[j].Q_kz)
+                                {
+                                        hh_channel[loop5].wf[k].q_kx = hh_config[j].q_kx;
+                                        hh_channel[loop5].wf[k].q_ky = hh_config[j].q_ky;
+                                        hh_channel[loop5].wf[k].q_kz = hh_config[j].q_kz;
+                                        hh_channel[loop5].wf[k].sz1 = hh_config[j].sz1;
+                                        hh_channel[loop5].wf[k].sz2 = hh_config[j].sz2;
+                                        hh_config[j].flag = 0;     
+                                        k++;
+                                }
+                        }
+                        loop5++;
                 }
         }
 
@@ -647,13 +806,15 @@ void general_eigvalue :: allocate_all_matrix(int subspace_dimension)
         x_ijab     = (MATRIX_CHANNEL **)malloc(subspace_dimension * sizeof(MATRIX_CHANNEL *));
         l_abij     = (MATRIX_CHANNEL **)malloc(subspace_dimension * sizeof(MATRIX_CHANNEL *));
         H_bar_ijab = (MATRIX_CHANNEL **)malloc(subspace_dimension * sizeof(MATRIX_CHANNEL *));
-
+        kinetic_bar= (MATRIX_CHANNEL **)malloc(subspace_dimension * sizeof(MATRIX_CHANNEL *));
+ 
         for(int i = 0; i< subspace_dimension; i++)
         {
             t_ijab[i]     = (MATRIX_CHANNEL *)malloc(hhpp_dimension * sizeof (MATRIX_CHANNEL));
             x_ijab[i]     = (MATRIX_CHANNEL *)malloc(hhpp_dimension * sizeof (MATRIX_CHANNEL));
             l_abij[i]     = (MATRIX_CHANNEL *)malloc(hhpp_dimension * sizeof (MATRIX_CHANNEL));
             H_bar_ijab[i] = (MATRIX_CHANNEL *)malloc(hhpp_dimension * sizeof (MATRIX_CHANNEL));
+            kinetic_bar[i]= (MATRIX_CHANNEL *)malloc(hhpp_dimension * sizeof (MATRIX_CHANNEL));
         }
 
         cout<< "subspace_dimension = "<<subspace_dimension<<endl;
@@ -675,7 +836,10 @@ void general_eigvalue :: allocate_all_matrix(int subspace_dimension)
 
                 temp_pointer1 = (double **)malloc(hhpp_channel_L[j].times * sizeof(double*));
                 H_bar_ijab[i][j].matrix = temp_pointer1;
-//
+
+                temp_pointer1 = (double **)malloc(hhpp_channel_L[j].times * sizeof(double*));
+                kinetic_bar[i][j].matrix = temp_pointer1;
+
                 for(int ij = 0; ij < hhpp_channel_L[j].times; ij++)
                 {
                     temp_pointer2 = (double *)malloc(hhpp_channel_R[j].times * sizeof(double));
@@ -689,7 +853,10 @@ void general_eigvalue :: allocate_all_matrix(int subspace_dimension)
 
                     temp_pointer2 = (double *)malloc(hhpp_channel_R[j].times * sizeof(double));
                     H_bar_ijab[i][j].matrix[ij] = temp_pointer2;
-                }
+
+                    temp_pointer2 = (double *)malloc(hhpp_channel_R[j].times * sizeof(double));
+                    kinetic_bar[i][j].matrix[ij] = temp_pointer2;
+               }
             }
         }
        // t_ijab[0][1].matrix[0][0] = 0;
@@ -794,6 +961,7 @@ void general_eigvalue :: read_all_matrix()
     }
 }
 
+
 void general_eigvalue :: calculate_H_bar_ij_ab(LECs Minnesota_LECs)  //introduce the similarity-transformed target Hamiltonian (with target LECs) with respect to right |psi>.
 {
     int iter = 0;
@@ -801,18 +969,11 @@ void general_eigvalue :: calculate_H_bar_ij_ab(LECs Minnesota_LECs)  //introduce
     double t_no_this, t_last;
     double alpha = 0.9; //*** Here we could try different alpha!!! ****//
     double temp1, temp2, delta;
-    double Ec = 0.;
     double f_ii, f_jj, f_aa, f_bb;  
+    double f_ii_kinetic, f_jj_kinetic, f_aa_kinetic, f_bb_kinetic;  
 
- 
-    temp1 = Ec;
-    double h0, h1, h2, h3, h4;
+    double h0, h1, h2, h3, h4, k34;
     
-    Minnesota_LECs.Vr = 1;
-    Minnesota_LECs.Vs = 0;
-
-    Minnesota_LECs.Vr = 200;
-    Minnesota_LECs.Vs = -91.85;
 
 
 //V_ij_ab and all the one body f term are calclulate under new LECs (c_i = 1, c_other = 0)
@@ -859,11 +1020,10 @@ void general_eigvalue :: calculate_H_bar_ij_ab(LECs Minnesota_LECs)  //introduce
                     {
                         V_ijkl[i].matrix[cd][ab]= V_ks_AS(L, hh_channel[i].wf[cd].q_kx, hh_channel[i].wf[cd].q_ky, hh_channel[i].wf[cd].q_kz, hh_channel[i].wf[cd].sz1, hh_channel[i].wf[cd].sz2,\
                         hh_channel[i].wf[ab].q_kx,hh_channel[i].wf[ab].q_ky, hh_channel[i].wf[ab].q_kz, hh_channel[i].wf[ab].sz1, hh_channel[i].wf[ab].sz2, Minnesota_LECs);
-                        //cout<<V_ijkl[i].matrix[cd][ab]<<" ";
+                       //if (i ==1) {cout<<"ab="<< ab<<" cd="<<cd<<" V_ijkl= "<<V_ijkl[i].matrix[cd][ab]<<" "<<"L= "<<L<<" q_kx="<<hh_channel[i].wf[cd].q_kx<<" q_ky="<<hh_channel[i].wf[cd].q_ky<<" q_kz="<< hh_channel[i].wf[cd].q_kz <<endl;}
                     }
                 }
         }
-
 
 
         ///////////////////////////////////////////////////////////
@@ -891,13 +1051,16 @@ void general_eigvalue :: calculate_H_bar_ij_ab(LECs Minnesota_LECs)  //introduce
         }
 
 
+
+    /////////////////////////////////////////////////////////////////////////
+    //*********************************************************************//
+    //************* Calculate the H_bar_ij_ab matrix  *********************//
+    //********************************************************************///
+    /////////////////////////////////////////////////////////////////////////
     for (int ket = 0; ket < subspace_dimension; ket ++)
     {
         for(int i = 0; i< hhpp_dimension; i++)
         {
-        //    cout<<"Q = "<<pp_channel[i].Qx<<" "<<pp_channel[i].Qy<<" "<<pp_channel[i].Qz;
-        //    cout<<" times = "<<pp_channel[i].times<<endl;
-            H_bar_ijab[ket][i].Qx = hhpp_channel_L[i].Qx;
             H_bar_ijab[ket][i].Qx = hhpp_channel_L[i].Qx;
             H_bar_ijab[ket][i].Qy = hhpp_channel_L[i].Qy;
             H_bar_ijab[ket][i].Qz = hhpp_channel_L[i].Qz;
@@ -908,18 +1071,15 @@ void general_eigvalue :: calculate_H_bar_ij_ab(LECs Minnesota_LECs)  //introduce
                 kp_y = (int)(((double)hhpp_channel_L[i].Qy + 2 * hhpp_channel_L[i].wf[ij].q_ky) / 2.);
                 kp_z = (int)(((double)hhpp_channel_L[i].Qz + 2 * hhpp_channel_L[i].wf[ij].q_kz) / 2.);
                 sp = hhpp_channel_L[i].wf[ij].sz1;
-                f_ii = f_ks(config, spstates_no, L, kp_x, kp_y, kp_z, sp, kp_x, kp_y, kp_z, sp, Minnesota_LECs);
-                //cout<<"i "<<f_ii<<endl;//<<" si = "<<sp<<endl;
-                //double byhand;
-                //byhand = pow(h_bar,2) * pow((2.*pi/L),2) * (pow(kp_x,2)+pow(kp_y,2)+pow(kp_z,2))/(2*mass);
-                //byhand += 7. * (200./pow(L,3) * pow(pi/1.487,1.5) + (-91.85)/pow(L,3) * pow(pi/0.465,1.5));
-    
-                //cout<<"by hand = "<<byhand<<endl;
+                f_ii = f_ks_2(config, spstates_no, L, kp_x, kp_y, kp_z, sp, kp_x, kp_y, kp_z, sp, Minnesota_LECs);
+                f_ii_kinetic = f_ks_1(config, spstates_no, L, kp_x, kp_y, kp_z, sp, kp_x, kp_y, kp_z, sp, Minnesota_LECs);
+
                 kp_x = (int)(((double)hhpp_channel_L[i].Qx - 2 * hhpp_channel_L[i].wf[ij].q_kx) / 2.);
                 kp_y = (int)(((double)hhpp_channel_L[i].Qy - 2 * hhpp_channel_L[i].wf[ij].q_ky) / 2.);
                 kp_z = (int)(((double)hhpp_channel_L[i].Qz - 2 * hhpp_channel_L[i].wf[ij].q_kz) / 2.);
                 sp = hhpp_channel_L[i].wf[ij].sz2;
-                f_jj = f_ks(config, spstates_no, L, kp_x, kp_y, kp_z, sp, kp_x, kp_y, kp_z, sp, Minnesota_LECs);
+                f_jj = f_ks_2(config, spstates_no, L, kp_x, kp_y, kp_z, sp, kp_x, kp_y, kp_z, sp, Minnesota_LECs);
+                f_jj_kinetic = f_ks_1(config, spstates_no, L, kp_x, kp_y, kp_z, sp, kp_x, kp_y, kp_z, sp, Minnesota_LECs);
     
                 for(int ab = 0; ab < hhpp_channel_R[i].times; ab++)
                 {
@@ -941,56 +1101,25 @@ void general_eigvalue :: calculate_H_bar_ij_ab(LECs Minnesota_LECs)  //introduce
                     kp_y = (int)(((double)hhpp_channel_R[i].Qy + 2 * hhpp_channel_R[i].wf[ab].q_ky) / 2.);
                     kp_z = (int)(((double)hhpp_channel_R[i].Qz + 2 * hhpp_channel_R[i].wf[ab].q_kz) / 2.);
                     sp = hhpp_channel_R[i].wf[ab].sz1;
-                    f_aa = f_ks(config, spstates_no, L, kp_x, kp_y, kp_z, sp, kp_x, kp_y, kp_z, sp, Minnesota_LECs);
-    
+                    f_aa = f_ks_2(config, spstates_no, L, kp_x, kp_y, kp_z, sp, kp_x, kp_y, kp_z, sp, Minnesota_LECs);
+                    f_aa_kinetic = f_ks_1(config, spstates_no, L, kp_x, kp_y, kp_z, sp, kp_x, kp_y, kp_z, sp, Minnesota_LECs);
                     kp_x = (int)(((double)hhpp_channel_R[i].Qx - 2 * hhpp_channel_R[i].wf[ab].q_kx) / 2.);
                     kp_y = (int)(((double)hhpp_channel_R[i].Qy - 2 * hhpp_channel_R[i].wf[ab].q_ky) / 2.);
                     kp_z = (int)(((double)hhpp_channel_R[i].Qz - 2 * hhpp_channel_R[i].wf[ab].q_kz) / 2.);
                     sp = hhpp_channel_R[i].wf[ab].sz2;
-                    f_bb = f_ks(config, spstates_no, L, kp_x, kp_y, kp_z, sp, kp_x, kp_y, kp_z, sp, Minnesota_LECs);
+                    f_bb = f_ks_2(config, spstates_no, L, kp_x, kp_y, kp_z, sp, kp_x, kp_y, kp_z, sp, Minnesota_LECs);
+                    f_bb_kinetic = f_ks_1(config, spstates_no, L, kp_x, kp_y, kp_z, sp, kp_x, kp_y, kp_z, sp, Minnesota_LECs);
                     h3 =  (f_aa + f_bb) * t_ijab[ket][i].matrix[ij][ab];
                     h4 = -(f_ii + f_jj) * t_ijab[ket][i].matrix[ij][ab];
-    
+  
+                    k34 =  ((f_aa_kinetic + f_bb_kinetic) - (f_ii_kinetic + f_jj_kinetic)) * t_ijab[ket][i].matrix[ij][ab];
+ 
                     H_bar_ijab[ket][i].matrix[ij][ab] = h0 + h1 + h2 + h3 + h4;
+                    kinetic_bar[ket][i].matrix[ij][ab] = k34;
                 }
             }
         }
     }
-
-    //    cout<<"new_V= "<<endl;
-    //    //for(int i = 0; i< hhpp_dimension; i++)
-    //    for(int i = 11; i<12 ; i++)
-    //    {
-    //        for(int ij = 0; ij < hhpp_channel_L[i].times; ij++)
-    //        {
-    //            for(int ab = 0; ab < hhpp_channel_R[i].times; ab++)
-    //            {
-    //                cout<<V_ijab[i].matrix[ij][ab];
-    //            }
-    //            cout<<endl;
-    //        }
-    //        cout << endl;
-    //    }
-    
-
-//    for(int ket = 0; ket < subspace_dimension; ket ++)
-//    {
-//        cout <<"number of subspace = "<<ket<<endl;
-//        for(int i = 0; i< 2; i++)
-//        {
-//            for(int ij = 0; ij < hhpp_channel_L[i].times; ij++)
-//            {
-//                for(int ab = 0; ab < hhpp_channel_R[i].times; ab++)
-//                {
-//                    cout<<H_bar_ijab[ket][i].matrix[ij][ab];
-//                }
-//                cout<<endl;
-//            }
-//            cout << endl;
-//        }
-//    
-//    }
-
 
 }
 
