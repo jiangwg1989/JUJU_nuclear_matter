@@ -16,6 +16,7 @@ def input_file(file_path,matrix):
             matrix[loop1,:] = temp_2[:]
 
 LECs = [200,-91.85]
+magic_no = 14
 
 subspace_dimension = 5
 N_matrix = np.zeros((subspace_dimension,subspace_dimension))
@@ -31,7 +32,7 @@ print("H="+str(H))
 
 N = np.matrix(N_matrix)
 Ni = N.I
-#print (Ni*N_matrix)
+print (Ni)
 #N_I = np.linalg.inv(N_matrix)
 #
 #print (N_matrix*N_I)
@@ -40,7 +41,34 @@ Ni_dot_H = np.dot(Ni,H)
 D,V = np.linalg.eig(Ni_dot_H)
 print (Ni_dot_H)
 print ("D="+str(D))
-print ("V="+str(V))
+#print ("V="+str(V))
+
+loop2 = 0
+for loop1 in range(subspace_dimension):
+    ev = D[loop1] 
+    if ev.imag != 0:
+        continue
+#    if ev.real < 0:
+#        continue
+    loop2 = loop2+1
+ev_all = np.zeros(loop2)
+
+loop2 = 0
+for loop1 in range(subspace_dimension):
+    ev = D[loop1] 
+    if ev.imag != 0:
+        continue
+#    if ev.real < 0:
+#        continue
+    ev_all[loop2] = ev.real
+    loop2 = loop2+1
+
+
+ev_sorted = sorted(ev_all)
+print(ev_sorted[0]/14)
+
+
+
 
 
 #D,V = np.linalg.eig(H_matrix)

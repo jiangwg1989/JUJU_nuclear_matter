@@ -61,7 +61,7 @@ class general_eigvalue
     public:
            general_eigvalue();
            ~general_eigvalue();
-           void inoutput(double rho, LECs Minnesota_LECs, int subspace_dimension_in);
+           double inoutput(double rho, LECs Minnesota_LECs, int subspace_dimension_in);
            int hhpp_dimension, hh_dimension, pp_no, hh_no, subspace_dimension;//subspace_dimension is the number of the new basis 
            double L;         
            double Ek;

@@ -1212,11 +1212,11 @@ double CCD_neutronmatter(double rho,int output_file_count, LECs Minnesota_LECs) 
 	}while(delta>10e-10);
         cout<<" iter="<<iter;
         cout.setf(ios::right, ios::adjustfield);
-        cout<<" , (Ec) ="  << setw(7)<< setprecision(5) <<temp2;
-        cout<<" , (Etot) ="<< setw(8)<<(hf_energy+temp2)<<endl;
+        //cout<<" , (Ec) ="  << setw(7)<< setprecision(5) <<temp2;
+        //cout<<" , (Etot) ="<< setw(8)<<(hf_energy+temp2)<<endl;
 
-        //cout<<" , (Ec/N) ="  << setw(7)<< setprecision(5) <<temp2/magic_no;
-        //cout<<" , (Etot/N) ="<< setw(8)<<(hf_energy+temp2)/magic_no<<endl;
+        cout<<" , (Ec/N) ="  << setw(7)<< setprecision(5) <<temp2/magic_no;
+        cout<<" , (Etot/N) ="<< setw(8)<<(hf_energy+temp2)/magic_no<<endl;
 
 
     //        for(int i = 0; i< hhpp_dimension; i++)
@@ -1437,7 +1437,7 @@ int main()
 // calculate t_ij_ab for different LECs        
         output_file_count = 0;
         start = clock();
-        int subspace_dimension = 15;
+        int subspace_dimension = 5;
 
 // generate subspace wf with different LECs
 //        rho = 0.08 ;
@@ -1454,31 +1454,31 @@ int main()
 //        } 
 
 // generate subspace wf with different rho
-        Minnesota_LECs.Vr = 200;
-        Minnesota_LECs.Vs = -91.85;
-        double E_per_A[subspace_dimension]; 
-        for (int loop1 = 0; loop1< subspace_dimension; loop1++)
-        {
-            rho = 0.02*(1+1*loop1);
-            E_per_A[loop1] = CCD_neutronmatter(rho,output_file_count,Minnesota_LECs);
-            output_file_count++;
-        } 
+//        Minnesota_LECs.Vr = 200;
+//        Minnesota_LECs.Vs = -91.85;
+//        double E_per_A[subspace_dimension]; 
+//        for (int loop1 = 0; loop1< subspace_dimension; loop1++)
+//        {
+//            rho = 0.005+0.05*loop1;
+//            E_per_A[loop1] = CCD_neutronmatter(rho,output_file_count,Minnesota_LECs);
+//            output_file_count++;
+//        } 
 
-
-        ofstream outfile;
-        string file_path;
-        file_path = "ture_neutronmatter.txt";
-        outfile.open(file_path,ios::out);
-        if (outfile.is_open())
-        {    
-            outfile << subspace_dimension<<endl;
-            outfile <<"rho      E/A"<<endl;
-            for (int loop1= 0; loop1<subspace_dimension; loop1++)
-            {
-                outfile << 0.02*(1+1*loop1)<<"    "<<setprecision(10)<<E_per_A[loop1]<<endl; 
-            }
-        }
-
+//
+//        ofstream outfile;
+//        string file_path;
+//        file_path = "true_neutronmatter.txt";
+//        outfile.open(file_path,ios::out);
+//        if (outfile.is_open())
+//        {    
+//            outfile << subspace_dimension<<endl;
+//            outfile <<"rho      E/A"<<endl;
+//            for (int loop1= 0; loop1<subspace_dimension; loop1++)
+//            {
+//                outfile <<setw(3) <<0.02*(1+1*loop1)<<"    "<<setprecision(10)<<E_per_A[loop1]<<endl; 
+//            }
+//        }
+//
 
 
         end = clock();
@@ -1486,9 +1486,54 @@ int main()
 
 
 //solve the general eigenvalue problem
-        //general_eigvalue project1;
-        //project1.inoutput(rho, Minnesota_LECs,subspace_dimension);
-        //cout<<"\n hhpp_dimension="<<project1.hhpp_dimension;
-        //cout<<endl<<"Ek="<<project1.Ek<<endl;  
+        general_eigvalue project1;
+        string st, file_path;
+        ifstream infile_2;
+//        double E_per_A_predict[15];
+
+        //for (int loop1 = 0; loop1< 1; loop1++)
+        //{ 
+            //int loop1 = 5;
+            //rho = 0 + 0.02*loop1;
+            rho = 0.2;
+            Minnesota_LECs.Vr = 200;
+            Minnesota_LECs.Vs = -91.85;
+
+            subspace_dimension = 5;
+            project1.inoutput(rho, Minnesota_LECs,subspace_dimension);
+             
+            cout<<"rho = "<<rho;                
+            st = "python eigenvector_diagonal.py >> gs.out";
+            system(st.c_str());
+            
+          //  file_path = "./gs.out";
+          //  infile_2.open(file_path,ios::in);
+          //  if(!infile_2)
+          //  {
+          //      cerr<<"open error!#2"<<endl;
+          //  }
+
+          //  infile_2 >> E_per_A_predict[loop1];
+          //  infile_2.close();
+        //}
+
+    //    ofstream outfile;
+    //    file_path = "predict_neutronmatter.txt";
+    //    outfile.open(file_path,ios::out);
+    //    if (outfile.is_open())
+    //    {    
+    //        outfile << subspace_dimension<<endl;
+    //        outfile <<"rho      E/A"<<endl;
+    //        for (int loop1= 0; loop1<subspace_dimension; loop1++)
+    //        {
+    //            outfile <<setw(3) <<0.02*(1+1*loop1)<<"    "<<setprecision(10)<<E_per_A_predict[loop1]     <<endl; 
+    //        }
+    //    }
+
+
+
+
+          // cout<<"\n hhpp_dimension="<<project1.hhpp_dimension;
+          // cout<<endl<<"Ek="<<project1.Ek<<endl;  
 
 }

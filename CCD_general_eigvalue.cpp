@@ -49,11 +49,11 @@ general_eigvalue :: ~general_eigvalue()
 }
 
 
-void general_eigvalue :: inoutput(double rho, LECs Minnesota_LECs, int subspace_dimension_in)
+double general_eigvalue :: inoutput(double rho, LECs Minnesota_LECs, int subspace_dimension_in)
 {
-    Minnesota_LECs.Vr = 200;
-    Minnesota_LECs.Vs = -91.85;
-    rho = 0.2;
+//    Minnesota_LECs.Vr = 200;
+//    Minnesota_LECs.Vs = -91.85;
+//    rho = 0.2;
 
 
     subspace_dimension = subspace_dimension_in;
@@ -99,6 +99,7 @@ void general_eigvalue :: inoutput(double rho, LECs Minnesota_LECs, int subspace_
     }
 
     write_to_file();
+    return(0);
 }
 
 void general_eigvalue :: write_to_file()
@@ -218,8 +219,8 @@ void general_eigvalue :: get_H_matrix()
                     }
                 }
             }
-            //cout <<" H0="<<H0<<"  H3="<<H3<<endl;
-            //cout <<" K0="<<K0<<"  K3="<<K3<<endl;
+            cout <<" H0="<<H0<<"  H3="<<H3<<endl;
+            cout <<" K0="<<K0<<"  K3="<<K3<<endl;
             H_matrix[bar][ket] = H0 + H3 ;
             K_matrix[bar][ket] = K0 + K3 ;
         }
@@ -567,7 +568,7 @@ void general_eigvalue :: setup_CCD_configuration_space(double rho)
         //********************************************************************//
         ////////////////////////////////////////////////////////////////////////
         int hhpp_temp_x, hhpp_temp_y, hhpp_temp_z;
-        //int hhpp_dimension = 0;
+        hhpp_dimension = 0;
         for(int i = 0; i<hh_no; i++) //将hh_config[i]的flag全都赋值回1
         {
                 hh_config[i].flag = 1;
@@ -930,7 +931,7 @@ void general_eigvalue :: read_all_matrix()
     ifstream infile_1;
     string file_path, ss_temp;
     int count;
-
+    cout << "subspace_dimension= "<<subspace_dimension<<endl;
     for (int i= 0 ; i < subspace_dimension; i++)
     {
             file_path = to_string(i) +".txt";
@@ -938,6 +939,7 @@ void general_eigvalue :: read_all_matrix()
             if(!infile_1)
             {
                 cerr<<"open error! #1"<<endl;
+                cerr<<file_path<<endl;
                 exit(1);
             }
 
