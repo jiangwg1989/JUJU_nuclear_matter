@@ -1,7 +1,7 @@
 #define pi 3.1415926
 
 const int magic_no = 14;
-const int Nmax = 2;
+const int Nmax = 4;
 const double mass = 938.92; // in unit of MeV
 const double h_bar = 197.33;
 

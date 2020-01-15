@@ -286,7 +286,7 @@ void general_eigvalue :: setup_CCD_configuration_space(double rho)
         cout <<"L="<<L<<endl;
         spstates_no = 2 * pow((2*Nmax+1),3);
         config = (spstate *)malloc(spstates_no * sizeof(spstate));
-
+        cout<<" Nmax="<<Nmax;
 
         ////////////////////////////////////////////////////////////////////////
         //********************************************************************//
@@ -872,7 +872,6 @@ void general_eigvalue :: allocate_all_matrix(int subspace_dimension)
                 store_space += hhpp_channel_L[j].times * hhpp_channel_R[j].times ;//* sizeof(double);
             }
         }
-
 
 
         //// Assignment for the V_ijkl ////

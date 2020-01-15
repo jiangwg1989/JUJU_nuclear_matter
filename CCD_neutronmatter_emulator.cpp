@@ -659,7 +659,7 @@ double CCD_neutronmatter(double rho,int output_file_count, LECs Minnesota_LECs) 
 			//hhpp_dimension++; // 这记录了hhpp里有多少个不同的总动量
 		}	
 	}
-//	cout<<"hhpp_dimension = "<<hhpp_dimension<<endl;
+	cout<<"hhpp_dimension = "<<hhpp_dimension<<endl;
 //	for(int i = 0; i<hh_no; i++)
 //	{
 //		hh_config[i].flag = 1;
@@ -784,6 +784,10 @@ double CCD_neutronmatter(double rho,int output_file_count, LECs Minnesota_LECs) 
     for(int i = 0; i<hhpp_dimension; i++) //循环所有hhpp_channel 并且对hhpp_channel[].L_wf R_wf 赋值
     {
     	k = 0;
+        cout <<"channel = "<<i<<endl;
+        cout <<"bra = "<<hhpp_channel_R[i].times<<endl;
+        cout <<"ket = "<<hhpp_channel_L[i].times<<endl;
+        
     	//cout<<"channel = "<<i<<endl;
     	//cout <<" qx="<<hhpp_channel[i].Qx<<" qy="<<hhpp_channel[i].Qy<<" qz="<<hhpp_channel[i].Qz<<endl;
 
@@ -834,6 +838,15 @@ double CCD_neutronmatter(double rho,int output_file_count, LECs Minnesota_LECs) 
 			cout<<"wtf erro2#"<<endl;
 		}
     }
+
+        int store_space = 0; 
+        for (int j = 0; j < hhpp_dimension; j++) 
+        {
+            store_space += hhpp_channel_L[j].times * hhpp_channel_R[j].times ;
+        }
+        cout << endl<< "store_space="<< store_space<<endl;
+
+
 
 
 
@@ -1148,7 +1161,7 @@ double CCD_neutronmatter(double rho,int output_file_count, LECs Minnesota_LECs) 
 					sp = hhpp_channel_R[i].wf[ab].sz1;
 					f_aa = f_ks(config, spstates_no, L, kp_x, kp_y, kp_z, sp, kp_x, kp_y, kp_z, sp, Minnesota_LECs);
 
-                	kp_x = (int)(((double)hhpp_channel_R[i].Qx - 2 * hhpp_channel_R[i].wf[ab].q_kx) / 2.);
+                	                kp_x = (int)(((double)hhpp_channel_R[i].Qx - 2 * hhpp_channel_R[i].wf[ab].q_kx) / 2.);
 					kp_y = (int)(((double)hhpp_channel_R[i].Qy - 2 * hhpp_channel_R[i].wf[ab].q_ky) / 2.);
 					kp_z = (int)(((double)hhpp_channel_R[i].Qz - 2 * hhpp_channel_R[i].wf[ab].q_kz) / 2.);
 					sp = hhpp_channel_R[i].wf[ab].sz2;
@@ -1296,8 +1309,8 @@ double CCD_neutronmatter(double rho,int output_file_count, LECs Minnesota_LECs) 
                 
         	if (out.is_open())
                 {
-                        out<<"Ec"<<endl;
-                        out<<Ec<<endl<<endl;
+                        out<<"Etot"<<endl;
+                        out<<(hf_energy+temp2)/magic_no<<endl<<endl;
                         out<<"t_ijab"<<endl;
                         for(int i = 0; i< hhpp_dimension; i++)
                         {
@@ -1437,7 +1450,7 @@ int main()
 // calculate t_ij_ab for different LECs        
         output_file_count = 0;
         start = clock();
-        int subspace_dimension = 5;
+        int subspace_dimension = 1;
 
 // generate subspace wf with different LECs
 //        rho = 0.08 ;
@@ -1454,15 +1467,15 @@ int main()
 //        } 
 
 // generate subspace wf with different rho
-//        Minnesota_LECs.Vr = 200;
-//        Minnesota_LECs.Vs = -91.85;
-//        double E_per_A[subspace_dimension]; 
-//        for (int loop1 = 0; loop1< subspace_dimension; loop1++)
-//        {
-//            rho = 0.005+0.05*loop1;
-//            E_per_A[loop1] = CCD_neutronmatter(rho,output_file_count,Minnesota_LECs);
-//            output_file_count++;
-//        } 
+        Minnesota_LECs.Vr = 200;
+        Minnesota_LECs.Vs = -91.85;
+        double E_per_A[subspace_dimension]; 
+        for (int loop1 = 0; loop1< subspace_dimension; loop1++)
+        {
+            rho = 0.3+0.01*loop1;
+            E_per_A[loop1] = CCD_neutronmatter(rho,output_file_count,Minnesota_LECs);
+            output_file_count++;
+        } 
 
 //
 //        ofstream outfile;
@@ -1495,16 +1508,16 @@ int main()
         //{ 
             //int loop1 = 5;
             //rho = 0 + 0.02*loop1;
-            rho = 0.2;
-            Minnesota_LECs.Vr = 200;
-            Minnesota_LECs.Vs = -91.85;
-
-            subspace_dimension = 5;
-            project1.inoutput(rho, Minnesota_LECs,subspace_dimension);
-             
-            cout<<"rho = "<<rho;                
-            st = "python eigenvector_diagonal.py >> gs.out";
-            system(st.c_str());
+//            rho = 0.3;
+//            Minnesota_LECs.Vr = 200;
+//            Minnesota_LECs.Vs = -91.85;
+//
+//            subspace_dimension = 5;
+//            project1.inoutput(rho, Minnesota_LECs,subspace_dimension);
+//             
+//            cout<<"rho = "<<rho;                
+//            st = "python eigenvector_diagonal.py >> gs.out";
+//            system(st.c_str());
             
           //  file_path = "./gs.out";
           //  infile_2.open(file_path,ios::in);
